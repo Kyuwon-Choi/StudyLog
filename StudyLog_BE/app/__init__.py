@@ -1,15 +1,19 @@
 from flask import Flask
-from .main import main as main_blueprint
-from .services.openai_service import initialize_openai
+from flask_restx import Api
+from flask_cors import CORS
+from .main import main_blueprint, main_namespace
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object("config.Config")
+    CORS(app)
 
-    # OpenAI 초기화
-    initialize_openai(app.config["OPENAI_API_KEY"])
+    # Swagger API 초기화
+    api = Api(app, version='1.0', title='API 문서', description='Swagger 문서', doc="/api-docs")
 
-    # 블루프린트 등록
+    # Namespace를 API에 추가
+    api.add_namespace(main_namespace, path='/convert')
+
+    # Blueprint 등록
     app.register_blueprint(main_blueprint)
 
     return app

@@ -1,5 +1,7 @@
 from flask import Blueprint
 
-main = Blueprint("main", __name__)
+# Blueprint 생성
+main_blueprint = Blueprint('main', __name__)
 
-from . import routes
+# routes에서 main_namespace 가져오기
+from .routes import main_namespace
