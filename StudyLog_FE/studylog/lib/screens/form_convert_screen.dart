@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 class FormConvertScreen extends StatefulWidget {
   const FormConvertScreen({super.key});
@@ -11,11 +13,47 @@ class FormConvertScreen extends StatefulWidget {
 class _FormConvertScreenState extends State<FormConvertScreen> {
   final TextEditingController _inputController = TextEditingController();
   final TextEditingController _outputController = TextEditingController();
+  bool _isLoading = false;
 
-  void _convertText() {
+  Future<void> _convertText() async {
+    final inputText = _inputController.text;
+    if (inputText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("변환할 텍스트를 입력해주세요.")),
+      );
+      return;
+    }
+
     setState(() {
-      _outputController.text = "변환된 텍스트: ${_inputController.text}";
+      _isLoading = true;
     });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:5000/api/convert'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"input_text": inputText}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _outputController.text = data['converted_text'];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("오류 발생: ${response.reasonPhrase}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("네트워크 오류 발생: $e")),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _copyText() {
@@ -25,10 +63,134 @@ class _FormConvertScreenState extends State<FormConvertScreen> {
     );
   }
 
+  // 플랫폼 선택 다이얼로그 호출
   void _publishText() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("블로그에 업로드되었습니다.")),
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("게시할 플랫폼 선택"),
+          content: const Text("GitHub 또는 Notion 중 하나를 선택하세요."),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showPlatformDialog("GitHub");
+              },
+              child: const Text("GitHub"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showPlatformDialog("Notion");
+              },
+              child: const Text("Notion"),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  // 정보 입력 다이얼로그
+  void _showPlatformDialog(String platform) {
+    final TextEditingController tokenController = TextEditingController();
+    final TextEditingController idController = TextEditingController();
+    final TextEditingController? titleController =
+        platform == "GitHub" ? TextEditingController() : null;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("$platform 정보 입력"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: tokenController,
+                decoration: const InputDecoration(
+                  labelText: "API Token",
+                ),
+              ),
+              TextField(
+                controller: idController,
+                decoration: InputDecoration(
+                  labelText: platform == "GitHub"
+                      ? "Github Name/Repository Name"
+                      : "Page ID",
+                ),
+              ),
+              if (platform == "GitHub")
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: "포스트 제목",
+                  ),
+                ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _uploadContent(platform, tokenController.text,
+                    idController.text, titleController?.text ?? "");
+              },
+              child: const Text("업로드"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _uploadContent(
+      String platform, String token, String id, String title) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final endpoint = platform == "GitHub" ? "github" : "notion";
+    final payload = platform == "GitHub"
+        ? {
+            "title": title,
+            "content": _outputController.text,
+            "github_token": token,
+            "repo_owner": id.split("/")[0], // 소유자와 저장소 분리
+            "repo_name": id.split("/")[1],
+          }
+        : {
+            "content": _outputController.text,
+            "notion_api_key": token,
+            "notion_page_id": id,
+          };
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:5000/api/$endpoint'), // 서버 엔드포인트 URL
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("업로드가 성공적으로 완료되었습니다.")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("오류 발생: ${response.reasonPhrase}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("네트워크 오류 발생: $e")),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -40,14 +202,10 @@ class _FormConvertScreenState extends State<FormConvertScreen> {
         elevation: 0,
         toolbarHeight: 80,
         title: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10), // 로고 위에 여백 추가
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             children: [
-              // Logo on the left
-              Image.asset(
-                "images/logo.png",
-                height: 150, // 로고 크기 조정
-              ),
+              Image.asset("images/logo.png", height: 150),
             ],
           ),
         ),
@@ -67,12 +225,10 @@ class _FormConvertScreenState extends State<FormConvertScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              "공부한 기록을 블로그에 기록할 양식으로 변환해줍니다.\nTistory, 네이버 블로그는 자동 업로드도 가능합니다.",
+              "공부한 기록을 블로그에 기록할 양식으로 변환해줍니다.\n깃허브, 노션은 자동 업로드도 가능합니다.",
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-
-            // 입력 및 출력 필드
             Expanded(
               child: Row(
                 children: [
@@ -88,12 +244,12 @@ class _FormConvertScreenState extends State<FormConvertScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // 버튼 섹션
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildActionButton("convert", _convertText),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : _buildActionButton("convert", _convertText),
                 _buildActionButton("copy", _copyText),
                 _buildActionButton("publish", _publishText),
               ],
