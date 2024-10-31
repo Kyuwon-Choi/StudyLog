@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(
         colorScheme: ColorScheme.fromSwatch(
-          backgroundColor: const Color(0xFFF4F4F9), 
+          backgroundColor: const Color(0xFFF4F4F9),
         ),
         textTheme: const TextTheme(
           displayLarge: TextStyle(
@@ -23,11 +23,11 @@ class MyApp extends StatelessWidget {
             color: Color(0xFF21272A),
           ),
           bodyMedium: TextStyle(
-            color: Color(0xFF21272A), 
+            color: Color(0xFF21272A),
           ),
         ),
-        cardColor: const Color(0xFF79747E), 
-        canvasColor: const Color(0xFFF3EDF7), 
+        cardColor: const Color(0xFF79747E),
+        canvasColor: const Color(0xFFF3EDF7),
       ),
       home: const HomeScreen(),
     );
