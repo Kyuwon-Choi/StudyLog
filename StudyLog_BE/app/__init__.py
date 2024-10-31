@@ -11,7 +11,7 @@ def create_app():
     api = Api(app, version='1.0', title='API 문서', description='Swagger 문서', doc="/api-docs")
 
     # Namespace를 API에 추가
-    api.add_namespace(main_namespace, path='/convert')
+    api.add_namespace(main_namespace, path="/api")
 
     # Blueprint 등록
     app.register_blueprint(main_blueprint)
