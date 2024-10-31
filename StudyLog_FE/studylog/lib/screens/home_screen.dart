@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:studylog/screens/form_convert_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -87,7 +88,13 @@ class HomeScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const FormConvertScreen()),
+                );
+              },
               child: const Text(
                 "시작하기",
                 style: TextStyle(
