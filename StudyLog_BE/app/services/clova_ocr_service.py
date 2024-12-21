@@ -43,5 +43,4 @@ if response.status_code == 200:
     print("OCR 결과:", response.json())  # 성공적으로 받은 응답
 else:
     print(f"오류 발생! 상태 코드: {response.status_code}")
-    print("대규원")
     print("응답 내용:", response.text)
