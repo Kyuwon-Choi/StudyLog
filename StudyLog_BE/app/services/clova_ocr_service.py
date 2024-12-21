@@ -5,8 +5,8 @@ import base64
 import json
 
 # API 정보
-api_url = 'https://cgmnhfk9vq.apigw.ntruss.com/custom/v1/37057/0765dc43de52bb37906f9b1f391280e8a36de32799dd6c828796346f7ab8b987/general'
-secret_key = 'V2tWeVNTZlBxcFlqT2JaSGtHeGFOQ0RRVklDY0VIbFA='
+api_url = '도메인'
+secret_key = '시크릿 키'
 
 # 로컬 이미지 파일 경로
 image_file = 'StudyLog_BE/app/services/ocr_test.png'
